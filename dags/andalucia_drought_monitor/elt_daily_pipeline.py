@@ -49,6 +49,7 @@ def ingest_ria_clima(partition_date: str, **kwargs) -> int:
 
 dbt_run_test = f"""
 set -euo pipefail
+export PATH="/opt/airflow/.venv/bin:$PATH"
 cd {DBT_PROJECT_DIR}
 dbt run --profiles-dir . --target dev
 dbt test --profiles-dir . --target dev
