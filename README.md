@@ -19,6 +19,7 @@ El código de producto (dbt, scripts, spark_jobs, include) **sigue en cada repo*
 
 - `./dags` → `/opt/airflow/dags`
 - Drought: montar también `scripts` y `dbt_project` del repo agro en `/opt/airflow/scripts` y `/opt/airflow/dbt_project`
+- `PYTHONPATH` debe incluir `/opt/airflow/scripts` (los DAGs importan `extract_*` sin tocar `sys.path`)
 - Flights: seguir montando `include`, `spark_jobs`, `dbt_transform`, `data` desde `data-flight-pipeline`
 - Red: Airflow debe poder resolver `agro-postgres` (p. ej. red `docker_agro-network`). **No** unir el servicio Compose `postgres` del stack agro a la red de flights con el alias `postgres` (colisión DNS con la metadatabase de Airflow).
 
