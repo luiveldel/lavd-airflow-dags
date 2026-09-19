@@ -1,8 +1,11 @@
 """
-Monthly ELT pipeline: ingest static GIS agricultural zones.
+Monthly ELT pipeline: ingest static GIS agricultural zones + reservoir catalog.
 
 Flow:
-  1. GIS agricultural zones (full refresh to PostGIS)
+  1. GIS agricultural zones (full refresh to PostGIS) — needs geopandas/pyogrio/GDAL
+  2. REDIAM reservoir catalog (full refresh)
+
+Runtime packages: see repo root requirements-drought.txt.
 """
 
 from __future__ import annotations

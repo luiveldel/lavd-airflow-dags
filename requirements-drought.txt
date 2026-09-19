@@ -1,0 +1,13 @@
+# Python packages required by andalucia_drought_monitor DAGs when run on the
+# shared Airflow image (data-flight-pipeline). Install into /opt/airflow/.venv
+# (and rebuild the image so they survive recreate).
+#
+# System packages (Debian/Ubuntu in the image):
+#   gdal-bin libgdal-dev libgeos-dev libproj-dev git
+
+polars>=1.0
+geopandas>=1.0
+pyogrio>=0.9
+geoalchemy2>=0.14
+shapely>=2.0
+pyproj>=3.6
