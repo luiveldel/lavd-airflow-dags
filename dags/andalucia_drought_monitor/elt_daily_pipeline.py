@@ -1,6 +1,8 @@
 """
 Daily ELT: REDIAM embalses + RIA + SiAR climate ingest, then dbt staging → marts.
 
+Partition date is data_interval_start (scheduled: previous morning window).
+
 Requires PYTHONPATH to include /opt/airflow/scripts (ingest modules) and
 dbt available on PATH (see bash task). Packages: requirements-drought.txt.
 """
@@ -63,21 +65,21 @@ def dag_() -> None:
     embalses = PythonOperator(
         task_id="ingest_embalses_daily",
         python_callable=ingest_embalses,
-        op_kwargs={"partition_date": "{{ ds }}"},
+        op_kwargs={"partition_date": "{{ data_interval_start | ds }}"},
         execution_timeout=timedelta(minutes=15),
     )
 
     ria = PythonOperator(
         task_id="ingest_ria_clima_daily",
         python_callable=ingest_ria_clima,
-        op_kwargs={"partition_date": "{{ ds }}"},
+        op_kwargs={"partition_date": "{{ data_interval_start | ds }}"},
         execution_timeout=timedelta(minutes=60),
     )
 
     siar = PythonOperator(
         task_id="ingest_siar_clima_daily",
         python_callable=ingest_siar_clima,
-        op_kwargs={"partition_date": "{{ ds }}"},
+        op_kwargs={"partition_date": "{{ data_interval_start | ds }}"},
         execution_timeout=timedelta(minutes=30),
     )
 
