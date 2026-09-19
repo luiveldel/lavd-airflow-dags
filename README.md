@@ -40,6 +40,8 @@ El usuario `dwh_user` necesita `USAGE`/`CREATE` y ownership (o grants de escritu
 
 ## Dependencias Python (sequía)
 
+Para SiAR (MAPA) hace falta `SIAR_API_KEY` en el entorno de Airflow (mismo valor que en `andalucia-drought-monitor/.env`).
+
 Ver [`requirements-drought.txt`](requirements-drought.txt). Sin ellas fallan:
 
 - `elt_daily_pipeline` → `ModuleNotFoundError: polars`

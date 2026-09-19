@@ -1,5 +1,5 @@
 """
-Daily ELT: REDIAM embalses + RIA climate ingest, then dbt staging → marts.
+Daily ELT: REDIAM embalses + RIA + SiAR climate ingest, then dbt staging → marts.
 
 Requires PYTHONPATH to include /opt/airflow/scripts (ingest modules) and
 dbt available on PATH (see bash task). Packages: requirements-drought.txt.
@@ -35,6 +35,12 @@ def ingest_ria_clima(partition_date: str) -> int:
     return run(partition_date)
 
 
+def ingest_siar_clima(partition_date: str) -> int:
+    from extract_siar import run
+
+    return run(partition_date)
+
+
 @dag(
     dag_id="elt_daily_pipeline",
     default_args={
@@ -43,11 +49,11 @@ def ingest_ria_clima(partition_date: str) -> int:
         "retries": 2,
         "retry_delay": timedelta(minutes=5),
     },
-    description="Daily ELT: REDIAM + RIA ingest → dbt staging/marts",
+    description="Daily ELT: REDIAM + RIA + SiAR ingest → dbt staging/marts",
     schedule="0 7 * * *",
     start_date=datetime(2024, 1, 1),
     catchup=False,
-    tags=["embalses", "ria", "rediam", "ifapa"],
+    tags=["embalses", "ria", "siar", "rediam", "ifapa", "mapa"],
     doc_md=__doc__,
 )
 def dag_() -> None:
@@ -68,6 +74,13 @@ def dag_() -> None:
         execution_timeout=timedelta(minutes=60),
     )
 
+    siar = PythonOperator(
+        task_id="ingest_siar_clima_daily",
+        python_callable=ingest_siar_clima,
+        op_kwargs={"partition_date": "{{ ds }}"},
+        execution_timeout=timedelta(minutes=30),
+    )
+
     dbt_transform = BashOperator(
         task_id="dbt_run_and_test",
         bash_command=DBT_BASH,
@@ -76,7 +89,7 @@ def dag_() -> None:
         execution_timeout=timedelta(minutes=30),
     )
 
-    start >> [embalses, ria] >> dbt_transform >> end
+    start >> [embalses, ria, siar] >> dbt_transform >> end
 
 
 dag_()
