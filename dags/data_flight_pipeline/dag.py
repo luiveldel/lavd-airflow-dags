@@ -112,6 +112,7 @@ DEFAULT_ARGS = {
     start_date=datetime(2025, 12, 21),
     catchup=True,
     schedule_interval="0 0 * * *",
+    max_active_runs=1,
     default_args=DEFAULT_ARGS,
     tags=["spark", "minio", "aviationstack", "etl"],
 )

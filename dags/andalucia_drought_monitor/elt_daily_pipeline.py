@@ -62,6 +62,8 @@ def ingest_siar_hourly(partition_date: str) -> int:
     schedule="0 7 * * *",
     start_date=datetime(2024, 1, 1),
     catchup=False,
+    # Una sola ejecución a la vez (evita solapes / doble trigger) y una lógica por día vía schedule.
+    max_active_runs=1,
     tags=["embalses", "ria", "siar", "siar-hourly", "rediam", "ifapa", "mapa"],
     doc_md=__doc__,
 )
