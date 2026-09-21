@@ -1,15 +1,9 @@
-"""
-Monthly ELT: GIS agricultural zones (PostGIS) + REDIAM reservoir catalog.
-
-Requires PYTHONPATH to include /opt/airflow/scripts. GIS needs
-geopandas/pyogrio/GDAL — see requirements-drought.txt.
-"""
-
 from __future__ import annotations
 
 from datetime import datetime, timedelta
 
 from airflow.decorators import dag
+from airflow.models import Variable
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 
@@ -25,22 +19,34 @@ def ingest_reservoir_catalog() -> int:
 
     return run()
 
+# -----------------------------------------------------------------------------
+# - VARS (using Airflow Variables with fallbacks to env vars)
+# -----------------------------------------------------------------------------
+DAG_NAME = "gis_polygons_and_reservoir_catalog"
+OWNER = Variable.get("dag_owner", default_var="lavelazquezd@proton.me")
+
+# -----------------------------------------------------------------------------
+# - DAG
+# -----------------------------------------------------------------------------
+DEFAULT_ARGS = {
+    "owner": OWNER,
+    "retries": 1,
+    "retry_delay": timedelta(minutes=10),
+    "email": ["lavelazquezd@proton.me"],
+    "email_on_failure": False,
+    "email_on_retry": False,
+    "depends_on_past": False,
+}
+
 
 @dag(
-    dag_id="elt_monthly_pipeline",
-    default_args={
-        "owner": "data-engineering",
-        "depends_on_past": False,
-        "retries": 1,
-        "retry_delay": timedelta(minutes=10),
-    },
-    description="Monthly ELT: GIS polygons + reservoir catalog",
-    schedule="@monthly",
+    DAG_NAME,
     start_date=datetime(2024, 1, 1),
+    schedule="@monthly",
     catchup=False,
     max_active_runs=1,
+    default_args=DEFAULT_ARGS,
     tags=["gis", "sigpac", "spatial", "embalses"],
-    doc_md=__doc__,
 )
 def dag_() -> None:
     start = EmptyOperator(task_id="start")

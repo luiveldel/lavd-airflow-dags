@@ -1,17 +1,9 @@
-"""
-Daily ELT: REDIAM embalses + RIA + SiAR climate ingest, then dbt staging → marts.
-
-Partition date is data_interval_start (scheduled: previous morning window).
-
-Requires PYTHONPATH to include /opt/airflow/scripts (ingest modules) and
-dbt available on PATH (see bash task). Packages: requirements-drought.txt.
-"""
-
 from __future__ import annotations
 
 from datetime import datetime, timedelta
 
 from airflow.decorators import dag
+from airflow.models import Variable
 from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
@@ -50,22 +42,34 @@ def ingest_siar_hourly(partition_date: str) -> int:
     return run(partition_date)
 
 
+# -----------------------------------------------------------------------------
+# - VARS (using Airflow Variables with fallbacks to env vars)
+# -----------------------------------------------------------------------------
+DAG_NAME = "embalses_ria_siar_daily"
+OWNER = Variable.get("dag_owner", default_var="lavelazquezd@proton.me")
+
+# -----------------------------------------------------------------------------
+# - DAG
+# -----------------------------------------------------------------------------
+DEFAULT_ARGS = {
+    "owner": OWNER,
+    "retries": 2,
+    "retry_delay": timedelta(minutes=5),
+    "email": ["lavelazquezd@proton.me"],
+    "email_on_failure": False,
+    "email_on_retry": False,
+    "depends_on_past": False,
+}
+
+
 @dag(
-    dag_id="elt_daily_pipeline",
-    default_args={
-        "owner": "data-engineering",
-        "depends_on_past": False,
-        "retries": 2,
-        "retry_delay": timedelta(minutes=5),
-    },
-    description="Daily ELT: REDIAM + RIA + SiAR ingest → dbt staging/marts",
-    schedule="0 7 * * *",
+    DAG_NAME,
     start_date=datetime(2024, 1, 1),
+    schedule="0 7 * * *",
     catchup=False,
-    # Una sola ejecución a la vez (evita solapes / doble trigger) y una lógica por día vía schedule.
     max_active_runs=1,
+    default_args=DEFAULT_ARGS,
     tags=["embalses", "ria", "siar", "siar-hourly", "rediam", "ifapa", "mapa"],
-    doc_md=__doc__,
 )
 def dag_() -> None:
     start = EmptyOperator(task_id="start")
