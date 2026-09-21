@@ -43,6 +43,13 @@ def ingest_siar_clima(partition_date: str) -> int:
     return run(partition_date)
 
 
+def ingest_siar_hourly(partition_date: str) -> int:
+    """Semihorario/horario SiAR → raw.raw_siar_clima_horario (tras diario, por cuota API)."""
+    from extract_siar_hourly import run
+
+    return run(partition_date)
+
+
 @dag(
     dag_id="elt_daily_pipeline",
     default_args={
@@ -55,7 +62,7 @@ def ingest_siar_clima(partition_date: str) -> int:
     schedule="0 7 * * *",
     start_date=datetime(2024, 1, 1),
     catchup=False,
-    tags=["embalses", "ria", "siar", "rediam", "ifapa", "mapa"],
+    tags=["embalses", "ria", "siar", "siar-hourly", "rediam", "ifapa", "mapa"],
     doc_md=__doc__,
 )
 def dag_() -> None:
@@ -83,6 +90,13 @@ def dag_() -> None:
         execution_timeout=timedelta(minutes=30),
     )
 
+    siar_hourly = PythonOperator(
+        task_id="ingest_siar_clima_hourly",
+        python_callable=ingest_siar_hourly,
+        op_kwargs={"partition_date": "{{ data_interval_start | ds }}"},
+        execution_timeout=timedelta(minutes=45),
+    )
+
     dbt_transform = BashOperator(
         task_id="dbt_run_and_test",
         bash_command=DBT_BASH,
@@ -91,7 +105,10 @@ def dag_() -> None:
         execution_timeout=timedelta(minutes=30),
     )
 
-    start >> [embalses, ria, siar] >> dbt_transform >> end
+    # Hourly after daily SiAR to protect MAPA API quota; embalses/RIA stay parallel.
+    start >> [embalses, ria, siar]
+    siar >> siar_hourly
+    [embalses, ria, siar_hourly] >> dbt_transform >> end
 
 
 dag_()
